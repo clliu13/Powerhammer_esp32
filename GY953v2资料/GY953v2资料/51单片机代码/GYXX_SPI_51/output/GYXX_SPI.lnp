@@ -1,0 +1,7 @@
+"..\output\main.obj",
+"..\output\spi.obj",
+"..\output\exti.obj",
+"..\output\usart.obj",
+"..\output\stc_it.obj" 
+TO "..\output\GYXX_SPI" 
+PRINT("..\lis\GYXX_SPI.m51") RAMSIZE(256) 

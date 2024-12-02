@@ -1,0 +1,85 @@
+C51 COMPILER V7.08   SPI                                                                   04/03/2015 11:19:52 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE SPI
+OBJECT MODULE PLACED IN ..\output\spi.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE ..\Peripherals\src\spi.c BROWSE INCDIR(F:\ARM\GY953v2×ÊÁÏ\GY953v2×ÊÁÏ\51µ¥Æ
+                    -¬»ú´úÂë\GYXX_SPI_51\Peripherals\inc\) DEBUG OBJECTEXTEND PRINT(..\lis\spi.lst) OBJECT(..\output\spi.obj)
+
+line level    source
+
+   1          #include "spi.h"
+   2          void Spi_Int(void)
+   3          {
+   4   1              CS=1;
+   5   1              SCK=1;
+   6   1              MOSI=1;
+   7   1              MISO=1; 
+   8   1      }
+   9          /*
+  10          1£º
+  11          ÒªÇóspiËÙ¶ÈÐ¡ÓÚ400Khz£¬¸Ã³ÌÐò²ÉÓÃµÄ¾§ÕñÎª11.0592M£¬Ôò»úÆ÷ÖÜÆÚÎª
+  12          12/11.0592us£¬Spi_RW·¢ËÍÒ»bitÊý¾ÝºÍ½ÓÊÕÒ»bitÊý¾Ý¹²ÓÐ5¸öÓï¾ä
+  13          ¾ÍËãÒ»¸öÓï¾äÒ»¸ö»úÆ÷ÖÜÆÚ£¬5¸öÓï¾äÐèÒªÔ¼5.4us£¬¼´1000000/5.4Ô¼Îª185K
+  14          Ð¡ÓÚ400Khz£¬·ûºÏÒªÇó£»
+  15          2£º
+  16          spiµÄCPOL=1£¬¼´Ê±ÖÓ¿ÕÏÐ×´Ì¬Îª¸ßµçÆ½
+  17          3£º
+  18          spiµÄCPHA=1£¬¼´Ê±ÖÓÏàÎ»Îª1£¬µÚ¶þ¸öÊ±ÖÓÌø±äÑØ²ÉÑù
+  19          4:
+  20          ÒòÎªCPIO=1£¬CPHA=1£¬ËùÒÔµÚÒ»¸öÌø±äÑØÊÇÏÂ½µÑØ£¬µÚ¶þ¸öÌø±äÑØÎªÉÏÉýÑØ£¬
+  21          ÔòÔÚµÚÒ»¸öÏÂ½µÑØÊ±£¬Ö÷»úÊä³öÒý½ÅMOSI¿ªÊ¼Êä³ö£¬´Ó»úÆäÊµÒ²ÊÇÔÚµÚÒ»¸öÏÂ
+  22          ½µÑØ×¼±¸ºÃMOSI£¬ËùÒÔÖ÷»úÔÚÏÂ½µÑØºóÒ»¶ÎÊ±¼äMISO¿ÉÒÔ²ÉÑù£¨¼´ÉÏÉýÑØÇ°²ÉÑù£©
+  23          */
+  24          
+  25          uint8_t Spi_RW(uint8_t Data)
+  26          {
+  27   1              unsigned char i;
+  28   1              SCK = 1;
+  29   1              for(i=0;i<8;i++) 
+  30   1              { 
+  31   2               MOSI=(Data & 0x80);/*Ð´ 1 bit£¬´Ó¸ßÍùµÍÐ´£¬Ê±ÖÓÇ°ÑØÊä³ö*/ 
+  32   2               Data = (Data << 1); //Êý¾ÝÏò×óÒÆÒ»Î»£¬¸üÐÂÊý¾Ý
+  33   2               SCK = 0;  //Ê±ÖÓÀ­µÍ£¬µÚÒ»¸öÌø±äÑØ£¬´ËÊ±Êý¾Ý»¹Î´±»´Ó»ú²ÉÑù  
+  34   2           Data |= MISO; //´ÓMISO¶ÁÈ¡1 bit,´æ·ÅÔÚData×îµÍÎ» £¬Ê±ÖÓºóÑØ²ÉÑù 
+  35   2               SCK = 1;/*CPIO=1£¬µÚ¶þ¸öÌø±äÑØ*/                       
+  36   2              }
+  37   1          return(Data); 
+  38   1      }
+  39          void Spi_write_buf(uint8_t add, uint8_t *pBuf, uint8_t num)
+  40          {
+  41   1              uint8_t i=0;
+  42   1              CS=0;
+  43   1              Spi_RW(add);
+  44   1              while(i<num)
+  45   1              Spi_RW(pBuf[i++]);
+  46   1              CS=1;
+  47   1      }
+  48          
+  49          void Spi_read_buf(uint8_t add, uint8_t *pBuf, uint8_t num)
+  50          {
+  51   1              uint8_t i=0;
+  52   1              CS=0;
+  53   1              Spi_RW(add);
+  54   1              while(i<num)
+C51 COMPILER V7.08   SPI                                                                   04/03/2015 11:19:52 PAGE 2   
+
+  55   1          {
+  56   2              pBuf[i++]=Spi_RW(0);
+  57   2          }
+  58   1              CS=1;
+  59   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    127    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      10
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

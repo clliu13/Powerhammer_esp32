@@ -1,0 +1,43 @@
+C51 COMPILER V7.08   EXTI                                                                  04/03/2015 11:19:52 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE EXTI
+OBJECT MODULE PLACED IN ..\output\exti.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE ..\Peripherals\src\exti.c BROWSE INCDIR(F:\ARM\GY953v2资料\GY953v2资料\51单
+                    -片机代码\GYXX_SPI_51\Peripherals\inc\) DEBUG OBJECTEXTEND PRINT(..\lis\exti.lst) OBJECT(..\output\exti.obj)
+
+line level    source
+
+   1          #include "exti.h"
+   2          uint8_t ACM_BUF[36]={0},BIT=0;
+   3          /*
+   4          input:n;外部中断源设置，0-外部中断0，1-外部中断1
+   5          input:Mode；外部中断触发方式，0-低电平触发，1-下降沿触发
+   6          */
+   7          void Exti_Int(bit n,uint8_t Mode)
+   8          {
+   9   1              if (n)
+  10   1              {
+  11   2                TCON|=(uint8_t)(Mode<<2);//外部中断1中断方式设置
+  12   2                IE  |=(uint8_t)(0x80|(1<<2));//允许外部中断1中断，开启总中断
+  13   2              }
+  14   1              else
+  15   1              {
+  16   2                TCON|=(uint8_t)Mode;//外部中断0中断方式设置
+  17   2                IE  |=(uint8_t)(0x80|1);//允许外部中断0中断，开启总中断
+  18   2              }
+  19   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     21    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     37       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

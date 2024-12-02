@@ -1,0 +1,90 @@
+C51 COMPILER V7.08   STC_IT                                                                04/03/2015 11:19:53 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE STC_IT
+OBJECT MODULE PLACED IN ..\output\stc_it.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE ..\Peripherals\src\stc_it.c BROWSE INCDIR(F:\ARM\GY953v2资料\GY953v2资料\51
+                    -单片机代码\GYXX_SPI_51\Peripherals\inc\) DEBUG OBJECTEXTEND PRINT(..\lis\stc_it.lst) OBJECT(..\output\stc_it.obj)
+
+line level    source
+
+   1          #include "stc_it.h"
+   2          #include "usart.h"
+   3          #include "exti.h"
+   4          #include "spi.h"
+   5          //外部中断1
+   6          uint8_t stata=0;
+   7          void EXTI1_IRQHandler(void)interrupt 2
+   8          {
+   9   1              uint8_t P3=0;
+  10   1              if(!BIT)//数据处理完毕BIT=0
+  11   1              {
+  12   2                      BIT=1;//下降沿标志
+  13   2                      EX1=0;//关闭外部中断
+  14   2                      LED_0=0;//指示灯亮
+  15   2              }
+  16   1      }
+  17          //串口中断
+  18          void USART_IRQHandler(void)interrupt 4
+  19          {
+  20   1              static uint8_t i=0,rebuf[3]={0};
+  21   1              uint8_t sum=0;
+  22   1          if(TI)//发送完成标志
+  23   1              {
+  24   2                TI=0;//清发送完成标志
+  25   2                send_ok=0;//缓存标志置0 
+  26   2              }
+  27   1              if(RI)//接收完成标志
+  28   1              {
+  29   2                      rebuf[i++]=SBUF;
+  30   2                      RI=0;//清中断接收标志
+  31   2                      if(!(rebuf[0]==0xa5))//判断帧头
+  32   2                      i=0;
+  33   2                      if(i==3)//判断功能字节
+  34   2               {
+  35   3                      sum=(uint8_t)(rebuf[1]+rebuf[0]);
+  36   3                      if(sum==rebuf[2])
+  37   3                      {
+  38   4                              switch(rebuf[1])
+  39   4                              {
+  40   5                                      case 0x45:stata_reg^=RPY;break;//输出欧拉角指令
+  41   5                                      case 0x15:stata_reg^=ACC;break;//输出加速度数据指令
+  42   5                                      case 0x25:stata_reg^=GYR;break;//输出陀螺仪数据指令
+  43   5                                      case 0x35:stata_reg^=MAG;break;//输出磁场数据指令
+  44   5                                      case 0x65:stata_reg^=Q4;break;//输出四元数数据指令
+  45   5                                      case 0xa4:KEY=1;break;//模块输出频率50hz设置
+  46   5                                      case 0xa5:KEY=2;break;//模块输出频率100hz设置
+  47   5                                      case 0xa6:KEY=3;break;//模块输出频率200hz设置
+  48   5                                      case 0x57:KEY=4;break;//加陀校准
+  49   5                                      case 0x58:KEY=5;break;//磁场校准
+  50   5                                      case 0x59:KEY=6;break;//恢复出厂设置，即清除保存的校准数据
+  51   5                                      case 0x75:read_key=1;break;//读取校准精度
+  52   5                                      case 0x85:read_key=read_key|2;break;//读取传感器量程
+  53   5                                      case 0x50:KEY=7;break;//开启所有传感器
+  54   5                                      case 0x51:KEY=8;break;//关闭加计
+C51 COMPILER V7.08   STC_IT                                                                04/03/2015 11:19:53 PAGE 2   
+
+  55   5                                      case 0x52:KEY=9;break;//关闭陀螺
+  56   5                                      case 0x53:KEY=10;break;//关闭磁场
+  57   5                                      default:KEY=0,read_key=0;break; 
+  58   5                              }
+  59   4                      }
+  60   3                      i=0;//清缓存计数
+  61   3                }     
+  62   2              }
+  63   1      
+  64   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    265    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      5       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

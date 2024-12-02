@@ -1,0 +1,50 @@
+/*
+Arduino:1.0.5-r2
+MCU:ATmega328 5v 16M
+本程序采用SPI读取GY-953模块
+硬件接法：
+中断0-INT;10-CS;13-SCK;12-MISO;11-MOSI;ATmega328 RX--ft232TX;ATmega328 TX--ft232RX
+程序说明：
+由于GY-953数据更新时,为低电平,所以待出现上升沿时为数据更新,所以设置的外部
+中断0（数字引脚2）为上升沿中断，在中断中更新标志位，然后在主循环查询标志为
+1则开始读取0x01后的所有寄存器(共41个),本程序通过串口接收输出指令,
+可在serial monitor输入对应的指令：
+'1'-- ON/OFF Roll Pitch Yaw output
+'2'-- ON/OFF raw ACC data output
+'3'-- ON/OFF raw GYR data output
+'4'-- ON/OFF raw MAG data output
+'5'-- ON/OFF raw  Q    data output
+'A'-- Set the output frequency 50hz
+'B'-- Set the output frequency 100hz
+'C'-- Set the output frequency 200hz
+'I' -- Calibration Accelerometer、Gyro
+'J' -- Calibration compass
+'K'-- Clear saved data
+'P'-- Read ACC、GYR、MAG calibration accuracy
+//注意字母为大写
+----------------------------------------
+ACC:0~3
+GYR:0~3
+compass:0~3
+0 being not accurate,  3 being accurate.
+output frequency:
+3---50HZ
+4---100HZ
+5---200HZ
+----------------------------------------
+'Q'-- Read ACC、GYR、MAG range 
+-----------------------------------------
+ACC:0---------------+-2g
+GYR:3---------------+-2000dps/s
+compass:1:---------16bit
+-----------------------------------------
+'U'--Open All sensors
+'V'--Close accelerometer
+'W'--Close gyro
+'X'--Close compass
+------------------
+GY953--ATmega328
+CS--10;MOSI--11;MISO--12;SCK--13;INT--2
+------------------
+版本：15.1.29
+*/

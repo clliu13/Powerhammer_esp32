@@ -1,0 +1,133 @@
+C51 COMPILER V7.08   MAIN                                                                  04/03/2015 11:19:52 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN ..\output\main.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE main.c BROWSE INCDIR(F:\ARM\GY953v2资料\GY953v2资料\51单片机代码\GYXX_SPI_5
+                    -1\Peripherals\inc\) DEBUG OBJECTEXTEND PRINT(..\lis\main.lst) OBJECT(..\output\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include "string.h"
+   3          #include "spi.h"
+   4          #include "exti.h"
+   5          #include "usart.h"
+   6          /*
+   7          Keil:uVision2
+   8          MCU:STC90C516RD+
+   9          本程序采用SPI读取GY-953模块
+  10          硬件接法：P3^3-INT;P3^4-CS;P3^5-SCK;P3^6-MISO;P3^7-MOSI;51_RX--ft232TX;51_TX--ft232RX
+  11          外接晶振11.0592M
+  12          程序说明：
+  13          由于GY-953数据更新时,为低电平,所以待出现上升沿时为数据更新,而51MCU不支持
+  14          上升沿中断,所以本程序在INT出现下降沿后待INT出现高电平表示一个上升沿,然后
+  15          开始读取0x01-0x24的寄存器(共36个),本程序通过串口接收输出指令,可上传给
+  16          上位机直接显示,程序支持上位机'加陀校准'、'磁场校准'、'保存数据'、'读取量程'
+  17          '精度、频率'按钮功能
+  18          注:中断处理程序位于stc_it.c
+  19          在编译此程序前，请先设置一下文件路径，设置方法：
+  20          1、点击Project;2、点击Options for Target 'GYXX_SPI';3、点击C51；4、在include Paths
+  21          找到程序文件夹的路径，把..\GYXX_SPI_51\Peripherals\inc\加入即可，例如
+  22          F:\ARM\GYXX_SPI_51\Peripherals\inc\
+  23          该程序仅做参考，如有问题请联系我们
+  24          http://shop62474960.taobao.com/?spm=a230r.7195193.1997079397.2.HuqW76&v=1
+  25          版本:GY953.V2
+  26          */
+  27          int main(void)
+  28          {
+  29   1              uint8_t DATA_ok=0,Data=0,sum=0,i=0;     
+  30   1              int16_t ROLL=0,PITCH=0,YAW=0;
+  31   1          int16_t Q[4]={0};
+  32   1              Spi_Int();//spi初始化
+  33   1              Usart_Int(9600);//串口初始化，波特率9600
+  34   1              Exti_Int(1,1);//外部中断1，下降沿触发
+  35   1              IP=0x10;//串口优先级高，外部中断优先级低
+  36   1              //开所有传感器，输出频率设置成100hz（默认开所有传感器，输出50hz，不能关所有传感器）
+  37   1              //即写成0x04，并不关闭所有传感器，这样也是开所有传感器，输出频率为100hz
+  38   1              while(!BIT);
+  39   1              Data=0x74|RegisterA;
+  40   1              Spi_write_buf(0x41,&Data,1);
+  41   1              while(1)
+  42   1              {       //INT为低电平时表示数据正在更新，所以在上升沿后表示更新完毕，可读取
+  43   2                      if(BIT&&(P3^3==1))
+  44   2                      {
+  45   3                      for(i=0;i<36;i++)
+  46   3                       Spi_read_buf(0x81+i,&ACM_BUF[i],1);//读取数据
+  47   3                       DATA_ok=1;     //读取标志置一
+  48   3                       BIT=0;
+  49   3                      }
+  50   2                      if(DATA_ok)//数据读取完毕
+  51   2                {
+  52   3                       LED_0=1;//指示灯灭
+  53   3                       DATA_ok=0;     //清标志
+  54   3                       CHeck(ACM_BUF);//串口指令检查
+C51 COMPILER V7.08   MAIN                                                                  04/03/2015 11:19:52 PAGE 2   
+
+  55   3                  if(stata_reg&RPY)//欧拉角输出
+  56   3                      {
+  57   4                              sum=0;
+  58   4                              for(i=0;i<6;i++)
+  59   4                                      sum+=ACM_BUF[20+i];
+  60   4                        Spi_read_buf((0x80|0x28),&Data,1);//读取角度校验和数据
+  61   4                        if(sum==Data)//判断收到的数据校验和和读取的是否相同，减少spi通讯错误
+  62   4                       {      
+  63   5                                ROLL=(ACM_BUF[20]<<8)|ACM_BUF[21];
+  64   5                                PITCH=(ACM_BUF[22]<<8)|ACM_BUF[23];
+  65   5                                YAW=(ACM_BUF[24]<<8)|ACM_BUF[25];
+  66   5                                Q[0]=(uint16_t)ROLL;
+  67   5                                Q[1]=(uint16_t)PITCH;
+  68   5                                Q[2]=(uint16_t)YAW;
+  69   5                                send_out(Q,3,0x45);
+  70   5                       }
+  71   4                      }
+  72   3                      if(stata_reg&ACC)//加数度数据输出
+  73   3                      {
+  74   4                         Q[0]=(ACM_BUF[2]<<8)|ACM_BUF[3];//ACC_X
+  75   4                         Q[1]=(ACM_BUF[4]<<8)|ACM_BUF[5];//ACC_Y
+  76   4                         Q[2]=(ACM_BUF[6]<<8)|ACM_BUF[7];//ACC_Z
+  77   4                         send_out(Q,3,0x15);
+  78   4                      }
+  79   3                      if(stata_reg&GYR)//陀螺数据输出
+  80   3                      {
+  81   4                              Q[0]=(ACM_BUF[8]<<8)|ACM_BUF[9];//GYR_X
+  82   4                              Q[1]=(ACM_BUF[10]<<8)|ACM_BUF[11];//GYR_Y
+  83   4                              Q[2]=(ACM_BUF[12]<<8)|ACM_BUF[13];//GYR_Z
+  84   4                              send_out(Q,3,0x25);
+  85   4                      }
+  86   3                      if(stata_reg&MAG)//磁场数据输出
+  87   3                      {
+  88   4                              Q[0]=(ACM_BUF[14]<<8)|ACM_BUF[15];//MAG_X
+  89   4                              Q[1]=(ACM_BUF[16]<<8)|ACM_BUF[17];//MAG_Y
+  90   4                              Q[2]=(ACM_BUF[18]<<8)|ACM_BUF[19];//MAG_Z
+  91   4                              send_out(Q,3,0x35);
+  92   4                      }
+  93   3                      if(stata_reg&Q4)//四元数数据输出
+  94   3                      {
+  95   4                          Q[0]=(ACM_BUF[26]<<8)|ACM_BUF[27];//q0
+  96   4                              Q[1]=(ACM_BUF[28]<<8)|ACM_BUF[29];//q1
+  97   4                              Q[2]=(ACM_BUF[30]<<8)|ACM_BUF[31];//q2
+  98   4                              Q[3]=(ACM_BUF[32]<<8)|ACM_BUF[33];//q3
+  99   4                              send_out(Q,4,0x65);
+ 100   4                      }
+ 101   3                      EX1=1;//数据处理完毕，开外部中断
+ 102   3                 }
+ 103   2                              
+ 104   2              }
+ 105   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    434    ----
+   CONSTANT SIZE    =      8    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      18
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V7.08   MAIN                                                                  04/03/2015 11:19:52 PAGE 3   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,130 @@
+C51 COMPILER V7.08   USART                                                                 04/03/2015 11:19:53 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE USART
+OBJECT MODULE PLACED IN ..\output\usart.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE ..\Peripherals\src\usart.c BROWSE INCDIR(F:\ARM\GY953v2×ÊÁÏ\GY953v2×ÊÁÏ\51µ
+                    -¥Æ¬»ú´úÂë\GYXX_SPI_51\Peripherals\inc\) DEBUG OBJECTEXTEND PRINT(..\lis\usart.lst) OBJECT(..\output\usart.obj)
+
+line level    source
+
+   1          #include "usart.h"
+   2          #include "string.h"
+   3          #include "spi.h"
+   4          #include "exti.h"
+   5          
+   6          void Usart_Int(uint32_t BaudRatePrescaler)
+   7          {
+   8   1               SCON  = 0x50;//1Î»ÆðÊ¼Î»£¬8Î»Êý¾ÝÎ»£¬1Î»Í£Ö¹Î»£¬Òì²½£¬Ê¹ÄÜ½ÓÊÕ
+   9   1               TMOD |= 0x20;//¶¨Ê±Æ÷1£¬¹¤×÷·½Ê½2£¬8Î»×Ô¶¯ÖØ×°¼ÆÊýÖµ
+  10   1              //Àý9600£¬28800/9600=3,TH1=253=FD£»
+  11   1           TH1   =256-(28800/BaudRatePrescaler); 
+  12   1               TL1   =256-(28800/BaudRatePrescaler);
+  13   1           TCON |=0x40;//Æô¶¯¶¨Ê±Æ÷1
+  14   1               IE   |=0x90;//´ò¿ª´®¿ÚÖÐ¶Ï£¬MCU×ÜÖÐ¶Ï
+  15   1      }
+  16          //·¢ËÍÒ»¸ö×Ö½Ú
+  17          uint8_t send_ok=0;
+  18          void USART_send_byte(uint8_t Tx_data)
+  19          {
+  20   1              while(send_ok);//µÈ´ý·¢ËÍ»º´æÎª¿Õ
+  21   1              SBUF = Tx_data;
+  22   1              send_ok=1;//»º´æ±êÖ¾ÖÃ1
+  23   1      }
+  24          //·¢ËÍLength-1¸öÊý¾Ý+1¸öÊý¾ÝÀÛ¼ÓºÍ
+  25          void USART_Send(uint8_t *Buffer, uint8_t Length)
+  26          {
+  27   1              uint8_t i=0;
+  28   1              while(i<Length)
+  29   1              {
+  30   2                      if(i<(Length-1))
+  31   2                      Buffer[Length-1]+=Buffer[i];
+  32   2                      USART_send_byte(Buffer[i++]);
+  33   2              }
+  34   1      }
+  35          //·¢ËÍÒ»Ö¡Êý¾Ý
+  36          void send_out(int16_t *Data,uint8_t length,uint8_t send)
+  37          {
+  38   1              uint8_t TX_DATA[13],i=0,k=0;
+  39   1              memset(TX_DATA,0,(2*length+5));//Çå¿Õ·¢ËÍÊý¾Ý
+  40   1              TX_DATA[i++]=0X5A;//Ö¡Í·
+  41   1              TX_DATA[i++]=0X5A;//Ö¡Í·
+  42   1              TX_DATA[i++]=send;//¹¦ÄÜ×Ö½Ú
+  43   1              TX_DATA[i++]=2*length;//Êý¾Ý¸öÊý
+  44   1              for(k=0;k<length;k++)//´æÈëÊý¾Ýµ½»º´æTX_DATAÊý×é
+  45   1              {
+  46   2                      TX_DATA[i++]=(uint16_t)Data[k]>>8;
+  47   2                      TX_DATA[i++]=(uint16_t)Data[k];
+  48   2              }
+  49   1              USART_Send(TX_DATA,(2*length+5));//·¢ËÍÒ»Ö¡Êý¾Ý 
+  50   1      }
+  51          //¼òµ¥´Ö±©ÑÓÊ±
+  52          void delay(uint16_t x)
+  53          {
+  54   1              while(x--);
+C51 COMPILER V7.08   USART                                                                 04/03/2015 11:19:53 PAGE 2   
+
+  55   1      }
+  56          //¼ì²é´®¿ÚÖ¸Áî
+  57          uint8_t KEY=0,read_key=0,stata_reg=0;
+  58          
+  59          void CHeck(uint8_t *re_data)
+  60          {
+  61   1              uint16_t num[4]={0};
+  62   1              uint8_t Data;
+  63   1              switch(read_key)
+  64   1              {
+  65   2                      case 1://·¢ËÍ¾«¶È
+  66   2                      {
+  67   3                              num[0]=((re_data[35]>>4)&0x03);
+  68   3                              num[1]=((re_data[35]>>2)&0x03);
+  69   3                              num[2]=(re_data[35]&0x03);
+  70   3                              num[3]=(re_data[0]&0x07);
+  71   3                              send_out(num,4,0x75);
+*** WARNING C182 IN LINE 71 OF ..\PERIPHERALS\SRC\USART.C: pointer to different objects
+  72   3                              read_key=0;
+  73   3                      }
+  74   2                              break;
+  75   2                      case 2://·¢ËÍÁ¿³Ì
+  76   2                      {
+  77   3                              num[0]=((re_data[34]>>4)&0x03);
+  78   3                              num[1]=((re_data[34]>>2)&0x03);
+  79   3                              num[2]=(re_data[34]&0x03);
+  80   3                              send_out(num,3,0x85);
+*** WARNING C182 IN LINE 80 OF ..\PERIPHERALS\SRC\USART.C: pointer to different objects
+  81   3                              read_key=0;
+  82   3                      }
+  83   2                              
+  84   2                      break;
+  85   2                      default:read_key=0;break;
+  86   2              }
+  87   1              switch(KEY)
+  88   1              {
+  89   2                      case 1:Data=0x73|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//50hz
+  90   2                      case 2:Data=0x74|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//100hz
+  91   2                      case 3:Data=0x75|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//200hz
+  92   2                      case 4:Data=0X04|RegisterB;Spi_write_buf(0x42,&Data,1);KEY=0;break;//¼ÓÍÓÐ£×¼
+  93   2                      case 5:Data=0x08|RegisterB;Spi_write_buf(0x42,&Data,1);KEY=0;break;//´Å³¡Ð£×¼
+  94   2                      case 6:Data=0x80|RegisterB;Spi_write_buf(0x42,&Data,1);KEY=0;break;//»Ö¸´³ö³§ÉèÖÃ
+  95   2                      case 7:Data=0x73|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//È«¿ª´«¸ÐÆ÷
+  96   2                      case 8:Data=0x63|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//¹Ø¼Ó¼Æ
+  97   2                      case 9:Data=0x53|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//¹ØÍÓÂÝ
+  98   2                      case 10:;Data=0x33|RegisterA;Spi_write_buf(0x41,&Data,1);KEY=0;break;//¹Ø´Å³¡
+  99   2                default:KEY=0;break;
+ 100   2              }
+ 101   1      }
+ 102          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    651    ----
+   CONSTANT SIZE    =      8    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4      39
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  2 WARNING(S),  0 ERROR(S)
